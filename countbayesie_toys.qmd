@@ -1,0 +1,244 @@
+---
+title: "countbasie_toy"
+format: html
+editor: visual
+---
+
+# The Toy Collector's Puzzle
+
+The more you find interesting probability problems hiding everywhere! For example the other day I popped into a local toy store and I ended up purchasing one of these vinyl Mega Man figures:
+
+![](https://images.squarespace-cdn.com/content/v1/54e50c15e4b058fc6806d068/1444714281286-XYNOKNB5JEZ4V253LEMP/image-asset.jpeg?format=750w)
+
+
+
+This type of figurine is referred to as a "blind box" since you do not know which figurine you are going to get when you buy it. Not only do I have a long time affinity for Mega Man, but this turns out to be a wonderful Probability Puzzle as well. The most obvious puzzle of course is: 
+
+"How many of these things do I have to buy to get them all?"
+
+To solve this problem we need to know: "how many unique figurines are there?" and "what are the probabilities of getting each one?" Thankfully the producers of this blind box print this valuable information on the side of the box!
+
+![](https://images.squarespace-cdn.com/content/v1/54e50c15e4b058fc6806d068/1444714533350-W3KQSKPFXJJ3NFNDSQG0/image-asset.jpeg?format=750w)
+
+
+There are a few interesting things about this dataset. First is the mystery figurine. Fortunately not knowing the identity of one of the figurines doesn't add any difficulty to our problem as long as we know how many distinct figurines there are. 
+
+The second issue is that two of the figurines are labeled with an unknown "?/??" chance! Guessing the probabilities of these figurines is another type of [parameter estimation problem](https://www.countbayesie.com/blog/2015/4/4/parameter-estimation-the-pdf-cdf-and-quantile-function). Unlike the ones we've covered in the past this, problem involves estimating more than one parameter. While this is exciting, we're going to ignore that for this post and assume that each of the unknowns has a 1/20 chance of coming up. 
+
+The final interesting thing about these figurines is that they do not all have an equal probability of being in the box. It turns out this makes answering our question much harder, but we will keep this part of the challenge! Whenever you're solving a problem that has an added challenge to it, it is always wise first to solve the easiest case and add complexity only once that's done.
+
+Lucky for us the simpler case is a rather famous problem in Probability.
+
+### **The Coupon Collector's Problem**
+
+The Coupon Collector's Problem is exactly like our Toy Collecting Problem only all of the probabilities are equal. Here's the basic outline of the problem: 
+
+Under the cap (traditionally a coupon) of a Bayesie brand Iced Tea there is a letter A, B, C or D. If you collect all A, B, C and D then you get a free t-shirt! The question is how many bottles of Bayesie brand Iced Tea do you expect to purchase before you get your t-shirt?
+
+The key word here is 'expect', what we're going to be doing is calculating [Expectation](#0). What exactly are we "expecting"? A more common Expectation question might be "How many bottles until you get the letter 'A'?" We know that the probability of getting an 'A' is 1/4 and we just want 1 'A' so we'd need to get 4 bottles since 1/(1/4)​​=4. As a note: this intuitive result is correct, but the reason why it is correct is *not* necessarily obvious, we'll cover that in a future post. From here on we are assuming that the Expected trials until we get an event we are hoping for is 1/p where p is the probability of the event we're interested in.
+
+Rather than looking for a specific letter under our cap we're just looking to get one we haven't seen before. With our first bottle of ice tea this is easy, we don't have any letters at all so our probability of getting a cap we haven't seen before is 1! Notationaly we'll express the probability of getting our nth unique letter as p(n)​​. We'll express the expectation of getting the first unique letter as:
+
+E\[n=1\] = 1/p(1) = 1/1 =1
+
+Now that we have our first cap it isn't going to be as easy to get the second. The probability of getting a repeat is 1/4, which means that:
+
+p(2) = 1 - 1/4 = 3/4
+
+and so the expected bottles to just get this 2nd unique letter is:
+
+
+
+E\[n=2\] = 1/p(2) = 1/(3/4) = 1.333
+
+Following this logic then:
+
+E\[n=3\] = 1/(2/4) = 2
+
+and
+
+E\[n=4\] = 1/(1/4) = 4
+
+The total expectation is the sum of all of these is:\
+
+
+E\[all\] = 4/4 + 4/3 + 4/2 + 4/1
+
+This is stating the exact thing as we have above, only thinking of it in terms of the ratio of total unique caps to the remaining we need to find. We can clean this up a bit and get:
+
+E\[all\] = 4\* 1/4 + 4\*1/3 + 4\*1/2 + 4\*1/1
+
+And compact our notation once again as:
+
+E\[all\] = 4\* sum(i=1:4,1/i)
+
+Which we can generalize for any unique N caps as
+
+E\[N\] = N\*sum(i:N,1/i)
+
+Had the Toy Collector's Problem followed suit, and each of the 14 unique figures had a 1/14​​ chance of being in the box, we would need to buy about 45 or 46 boxes to get all of them!
+
+
+
+**The Problem with Unequal Probabilities**
+
+Let's make this problem mirror our original toy collecting problem and see what difficulties arise. The new problem is the same except the caps no longer have equal probabilities. There's a 1/2 chance of getting A, 1/4 for B, and C and D both have 1/8 chances of being found. If we follow the same logic as before we start out in the same situation: we have no caps at all so we're guaranteed to get a new letter on the first cap! So p(1) = 1 and E\[n=1\] = 1 just as before. But what about p(2)?
+
+The problem we have now is that p(2) is not Independent of the previous cap we got! If our first cap was an A then we have only a 1/2 chance of getting a new cap. If we got either a C or a D our probability of getting a new cap would be 7/8! The next step in our process depends on whether we got A, B, C or D for our first cap.
+
+At each point in our process now we have these branching expectations. We're going to need much more than a small tweak to our Coupon Collector's solution. How are we going to approach this?
+
+**One Solution: Monte Carlo**
+
+This is a great example of how we can solve a really challenging analytical problem very trivially using a [Monte Carlo simulation](https://www.countbayesie.com/blog/2015/3/3/6-amazing-trick-with-monte-carlo-simulations). All of the probabilities given are out of 20 so we can represent our figures as numbers 1-14 and simply put as many of that number in a list as there are chances in 20 of getting the figurine:
+
+```{r}
+figurine_sample_space <- c(1,1,2,3,4,5,5,6,7,7,8,9,10,11,11,12,12,13,13,14)
+```
+
+now we want to simulate buying a blind box, which is simply sampling with replacement:
+
+```{r}
+buy.box <- function(){
+  sample(figurine_sample_space,1,replace=T)
+} # This gives every box a 1/14 chance of being chosen, which isn't quite right.
+```
+
+We'll represent the current figurines in hand as a set, and for a single simulation just keep buying boxes until we have all 14. We'll return the number of boxes we had to buy:
+
+```{r}
+simulate.collect.them.all <- function(){
+  owned <- c() # at first you don't own any
+  
+  while(length(unique(owned)) < 14){ 
+    owned <- c(owned,buy.box())
+  } # And then you buy one each time until you own all 14
+  
+  length(owned) # How many do you end up with in total?
+}
+
+  
+```
+
+Finally, we run this 10,000 times and look at the mean of the results!
+
+```{r}
+trials <- 10000 # try this a lot of times
+
+results <- replicate(trials,simulate.collect.them.all()) # Run all those trials
+
+expected <- mean(results) # see what the mean sresult is
+
+expected
+
+data = data.frame(
+  results = results
+)
+
+ggplot(data, aes(x=results))+
+  geom_histogram(binwidth = 1)+
+  geom_vline(xintercept = expected)+
+  xlab("number of boxes")+
+  ylab("frequency")+
+  labs(title = "Density Estimate of Number of Boxes Needed")
+```
+
+Aside from being an easy answer to our problem, modeling the distribution is another great benefit of building a Monte Carlo simulation! To get the distribution for our Coupon Collector's Problem, we would have to solve a slightly different problem of the probability of winning the t-shirt for 0 through infinity caps!
+
+**Beyond Simulations**
+
+Monte Carlo simulations are great, but they can also feel like a bit of a hack. We still don't have a great mathematical model for the Toy Collector's problem. For our example that likely isn't an issue: we only care about whole numbers of toys we need to purchase so an analytic solution to our problem wouldn't give us a better answer. However, there is one simple change we could make that would add some serious complications to our simulation. Suppose that some of the figurines had extremely low likelihood of being found, say 1/10,000 Our simulation only ran 10,000 times which means that the probability of choosing that figurine as the start path at all [is only \~63%](https://www.countbayesie.com/blog/2015/2/18/one-in-a-million-and-e). Furthermore if we have just a single low probability figurine, our simulation is going to have to run much longer to collect them all! It's not hard to think that there might be analogies to the Toy Collector's problem in fields such as Physics where certain events have much lower than even 1/10,000 chance of happening.
+
+To solve this problem we're going to have to explore the wonderful world of Stochastic Processes! 
+
+In the meantime you can rest easy knowing that my blind box actually did contain the mystery figurine:
+
+![](https://images.squarespace-cdn.com/content/v1/54e50c15e4b058fc6806d068/1444714713607-64LAY3KPL26UI458L4KU/image-asset.jpeg?format=500w)
+
+------------------------------------------------------------------------
+
+## Addendum
+
+OK, this is Brian now. It bugs me that we didn't explicitly name the probability for each figurine, since that seems like it would be useful. But you can add a probability parameter to `sample` so I'll just do that and see how it changes things.
+
+```{r}
+
+
+figurine_sample_space <- c(1:14)
+
+figurine_probability <- c(
+  1/20,
+  1/20, # This might be different, but this and the other one need to add up to 2/10
+  1/20,
+  2/20,
+  2/20,
+  2/20,
+  1/20, # The other one
+  2/20,
+  1/20,
+  1/20,
+  1/20,
+  2/20,
+  1/20,
+  2/20
+)
+
+# Let's make sure these make sense
+length(figurine_sample_space)
+length(figurine_probability)
+sum(figurine_probability) # all probabilities sum to 1
+
+buy.box <- function(){
+  sample(figurine_sample_space,size = 1,prob = figurine_probability,replace=T)
+}
+
+simulate.collect.them.all <- function(){
+  owned <- c() # at first you don't own any
+  
+  while(length(unique(owned)) < 14){ 
+    owned <- c(owned,buy.box())
+  } # And then you buy one each time until you own all 14
+  
+  length(owned) # How many do you end up with in total?
+}
+
+
+trials <- 1000000 # try this a lot of times, let's try a million!
+
+start_time <- Sys.time() # Let's do a timer
+results <- replicate(trials,simulate.collect.them.all()) # Run all those trials
+end_time <- Sys.time()
+end_time - start_time # wow! That took 12 minutes
+
+
+expected <- mean(results) # see what the mean result is
+
+expected
+
+data = data.frame(
+  results = results
+)
+
+ggplot(data, aes(x=results))+
+  geom_histogram(binwidth = 1)+
+  geom_vline(xintercept = expected)+
+  xlab("number of boxes")+
+  ylab("frequency")+
+  labs(title = "Density Estimate of Number of Boxes Needed")
+```
+
+OK, pretty much the same. Takes a long time to run a million simulations though!
+\
+
+
+\
+
+
+\
+
+
+
+
+\
+
+
